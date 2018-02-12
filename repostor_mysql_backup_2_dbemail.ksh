@@ -159,12 +159,30 @@ echo "End of mysql_backup.ksh"
 echo "End of mysql_backup.ksh"   >> $NOTIFY
 echo "========================="
 echo "=========================" >> $NOTIFY
-mailx -s "$SUBJECT" $EMAIL_VV < $NOTIFY
+# mailx -s "$SUBJECT" $EMAIL_VV < $NOTIFY
 #
 # Transfer files
 cd  $HOME/scripts
 grep ':Backup of database'  $HOME/scripts/${SERVER}.txt > $HOME/scripts/${SERVER}_send.txt
-mailx -s "$SUBJECT" $EMAIL_DBA < $HOME/scripts/${SERVER}_send.txt
 # mailx -s "$SUBJECT" $EMAIL_VV < $HOME/scripts/${SERVER}_send.txt
+
+success=`grep ':Backup of database'  $HOME/scripts/${SERVER}.txt | grep 'completed succesfully:' | wc -l`
+fail=`grep ':Backup of database'  $HOME/scripts/${SERVER}.txt | grep 'failed:' | wc -l`
+notknown=`grep ':Backup of database'  $HOME/scripts/${SERVER}.txt | grep -v 'failed:' |  grep -v 'completed succesfully:' | wc -l`
+echo "BACKUP OK                       : " $success  > $HOME/scripts/${SERVER}_send2.txt
+echo "BACKUP FAILURES                 : " $fail  >> $HOME/scripts/${SERVER}_send2.txt
+echo "BACKUP STATUS NOT KNOWN         : " $notknown  >> $HOME/scripts/${SERVER}_send2.txt
+if [ $fail -gt 0 ]; then
+     SUBJECT2='FAILURES: '$SUBJECT
+elif [ $notknown -gt 0 ]; then
+     SUBJECT2='UNKNOWN STATUS OF CERTAIN BACKUPS: '$SUBJECT
+else
+     SUBJECT2='SUCCESSFUL: '$SUBJECT
+fi
+mv $HOME/scripts/${SERVER}.txt $HOME/scripts/DETAILED_${SERVER}.txt
+mv $HOME/scripts/${SERVER}_send.txt $HOME/scripts/SUMMARY_${SERVER}.txt
+# mailx -a $HOME/scripts/DETAILED_${SERVER}.txt -a $HOME/scripts/SUMMARY_${SERVER}.txt -s "$SUBJECT2" $EMAIL_DBA < $HOME/scripts/${SERVER}_send2.txt
+mailx -a $HOME/scripts/DETAILED_${SERVER}.txt -a $HOME/scripts/SUMMARY_${SERVER}.txt -s "$SUBJECT2" $EMAIL_VV < $HOME/scripts/${SERVER}_send2.txt
+mv $HOME/scripts/DETAILED_${SERVER}.txt $HOME/log/DETAILED_${SERVER}_`date +\%d\%b`.txt
 #
 # ------   /home/ccspsql/scripts/mysql_backup.ksh   ------ #
